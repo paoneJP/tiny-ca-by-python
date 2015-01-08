@@ -1,6 +1,4 @@
-#! /usr/bin/python
-
-from __future__ import print_function
+#! /usr/bin/python3
 
 import sys
 import os
@@ -16,19 +14,19 @@ TERM_OF_VALIDITY = 3  # years
 
 
 if os.path.isfile('cacert/cacert.key') or os.path.isfile('cacert/cacert.crt'):
-    r = raw_input('warning: CA certificate is already exists. ' \
-                      'Overwrite it? [y/N] ')
+    r = input('warning: CA certificate is already exists. ' \
+              'Overwrite it? [y/N] ')
     if not r.lower() == 'y':
         exit(0)
 
 
 attrs = []
-attrs.append(('C', raw_input('C=')))
-attrs.append(('L', raw_input('L=')))
-attrs.append(('O', raw_input('O=')))
-attrs.append(('OU', raw_input('OU=')))
-attrs.append(('CN', raw_input('CN=')))
-cdp = raw_input('CRL distribution point: ')
+attrs.append(('C', input('C=')))
+attrs.append(('L', input('L=')))
+attrs.append(('O', input('O=')))
+attrs.append(('OU', input('OU=')))
+attrs.append(('CN', input('CN=')))
+cdp = input('CRL distribution point: ')
 
 dn = []
 t = []
@@ -40,7 +38,7 @@ dn_str = ','.join(t)
 
 print('\nDN: ' + dn_str)
 print('CDP: ' + cdp)
-r = raw_input('Issue this CA certificate? [y/N] ')
+r = input('Issue this CA certificate? [y/N] ')
 if not r.lower() == 'y':
     exit(0)
 
@@ -74,18 +72,19 @@ expire = today.replace(today.year+TERM_OF_VALIDITY) + datetime.timedelta(15)
 cert = crypto.X509()
 cert.set_version(2)
 cert.set_serial_number(int(time.time()))
-cert.set_notBefore(today.strftime('%Y%m%d000000Z'))
-cert.set_notAfter(expire.strftime('%Y%m%d000000Z'))
+cert.set_notBefore(today.strftime('%Y%m%d000000Z').encode())
+cert.set_notAfter(expire.strftime('%Y%m%d000000Z').encode())
 cert.set_issuer(req.get_subject())
 cert.set_subject(req.get_subject())
 cert.set_pubkey(req.get_pubkey())
 if cdp:
-    ext = crypto.X509Extension('crlDistributionPoints', False, 'URI:'+cdp)
+    ext = crypto.X509Extension(b'crlDistributionPoints', False,
+                               b'URI:'+cdp.encode())
     cert.add_extensions([ext])
-ext1 = crypto.X509Extension('basicConstraints', True, 'CA:TRUE')
-ext2 = crypto.X509Extension('keyUsage', True, 'keyCertSign, cRLSign')
-ext3 = crypto.X509Extension('extendedKeyUsage', False,
-                            'serverAuth, clientAuth')
+ext1 = crypto.X509Extension(b'basicConstraints', True, b'CA:TRUE')
+ext2 = crypto.X509Extension(b'keyUsage', True, b'keyCertSign, cRLSign')
+ext3 = crypto.X509Extension(b'extendedKeyUsage', False,
+                            b'serverAuth, clientAuth')
 cert.add_extensions([ext1, ext2, ext3])
 cert.sign(key, HASH_ALGORITHM)
 
@@ -97,12 +96,12 @@ for d in dirs:
 
 r = crypto.dump_certificate(crypto.FILETYPE_PEM, cert)
 f = open('cacert/cacert.crt', 'w')
-f.write(r)
+f.write(r.decode())
 f.close()
 
-r = crypto.dump_privatekey(crypto.FILETYPE_PEM, key, 'AES256', pp)
+r = crypto.dump_privatekey(crypto.FILETYPE_PEM, key, 'AES256', pp.encode())
 f = open('cacert/cacert.key', 'w')
-f.write(r)
+f.write(r.decode())
 f.close()
 
-os.chmod('cacert/cacert.key', 0600)
+os.chmod('cacert/cacert.key', 0o600)

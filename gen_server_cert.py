@@ -1,6 +1,4 @@
-#! /usr/bin/python
-
-from __future__ import print_function
+#! /usr/bin/python3
 
 import sys
 import os
@@ -38,11 +36,11 @@ while True:
 
 
 attrs = []
-attrs.append(('C', raw_input('C=')))
-attrs.append(('L', raw_input('L=')))
-attrs.append(('O', raw_input('O=')))
-attrs.append(('OU', raw_input('OU=')))
-attrs.append(('CN', raw_input('CN=')))
+attrs.append(('C', input('C=')))
+attrs.append(('L', input('L=')))
+attrs.append(('O', input('O=')))
+attrs.append(('OU', input('OU=')))
+attrs.append(('CN', input('CN=')))
 
 dn = []
 t = []
@@ -53,7 +51,7 @@ for (k,v) in attrs:
 dn_str = ','.join(t)
 
 print('\nDN: ' + dn_str)
-r = raw_input('Issue this server certificate? [y/N] ')
+r = input('Issue this server certificate? [y/N] ')
 if not r.lower() == 'y':
     exit(0)
 
@@ -87,8 +85,8 @@ expire = today.replace(today.year+TERM_OF_VALIDITY) + datetime.timedelta(15)
 cert = crypto.X509()
 cert.set_version(2)
 cert.set_serial_number(int(time.time()))
-cert.set_notBefore(today.strftime('%Y%m%d000000Z'))
-cert.set_notAfter(expire.strftime('%Y%m%d000000Z'))
+cert.set_notBefore(today.strftime('%Y%m%d000000Z').encode())
+cert.set_notAfter(expire.strftime('%Y%m%d000000Z').encode())
 cert.set_issuer(cacert.get_subject())
 cert.set_subject(req.get_subject())
 cert.set_pubkey(req.get_pubkey())
@@ -100,25 +98,25 @@ for i in range(cacert.get_extension_count()):
         break
 if ext:
     cert.add_extensions([ext])
-ext1 = crypto.X509Extension('basicConstraints', True, 'CA:FALSE')
-ext2 = crypto.X509Extension('keyUsage', True,
-                            'digitalSignature, keyEncipherment')
-ext3 = crypto.X509Extension('extendedKeyUsage', False,
-                            'serverAuth, clientAuth')
+ext1 = crypto.X509Extension(b'basicConstraints', True, b'CA:FALSE')
+ext2 = crypto.X509Extension(b'keyUsage', True,
+                            b'digitalSignature, keyEncipherment')
+ext3 = crypto.X509Extension(b'extendedKeyUsage', False,
+                            b'serverAuth, clientAuth')
 cert.add_extensions([ext1, ext2, ext3])
 cert.sign(cakey, HASH_ALGORITHM)
 
 
-name = '{}:{}'.format(cert.get_subject().CN, cert.get_serial_number())
+name = '{}_{}'.format(cert.get_subject().CN, cert.get_serial_number())
 
 r = crypto.dump_certificate(crypto.FILETYPE_PEM, cert)
 f = open('certs/{}.crt'.format(name), 'w')
-f.write(r)
+f.write(r.decode())
 f.close()
 
-r = crypto.dump_privatekey(crypto.FILETYPE_PEM, key, 'AES256', pp)
+r = crypto.dump_privatekey(crypto.FILETYPE_PEM, key, 'AES256', pp.encode())
 f = open('certs/{}.key'.format(name), 'w')
-f.write(r)
+f.write(r.decode())
 f.close()
 
-os.chmod('certs/{}.key'.format(name), 0600)
+os.chmod('certs/{}.key'.format(name), 0o600)
